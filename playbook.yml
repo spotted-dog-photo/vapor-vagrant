@@ -1,0 +1,122 @@
+---
+- hosts: all
+  tasks:
+  - name: Create /vagrant/system directory
+    file:
+      path: /vagrant/system
+      state: directory
+    become: true
+
+  - name: Configure swap
+    shell: "{{ item }}"
+    with_items:
+      - swapoff -a
+      - dd if=/dev/zero of=/swapfile bs=1M count=4096
+      - mkswap /swapfile
+      - swapon /swapfile
+    become: true
+
+  - name: Update apt-get
+    apt:
+      update_cache: yes
+    become: true
+
+  - name: Install Nginx
+    apt:
+      name: nginx
+      state: present
+    become: true
+
+  - name: Install git-all
+    apt:
+      name: git-all
+      state: present
+    become: true
+
+  - name: Install supervisor
+    apt:
+      name: supervisor
+      state: present
+    become: true
+
+  - name: Install clang
+    apt:
+      name: clang
+      state: present
+    become: true
+
+  - name: Install libicu-dev
+    apt:
+      name: libicu-dev
+      state: present
+    become: true
+
+  - name: Install binutils
+    apt:
+      name: binutils
+      state: present
+    become: true
+
+  - name: Install git
+    apt:
+      name: git
+      state: present
+    become: true
+
+  - name: Check if Swift 3 downloaded
+    stat:
+      path: /home/vagrant/swift-3.0-RELEASE-ubuntu14.04.tar.gz
+    register: swift_download
+
+  - name: Download Swift 3
+    get_url:
+      url: https://swift.org/builds/swift-3.0-release/ubuntu1404/swift-3.0-RELEASE/swift-3.0-RELEASE-ubuntu14.04.tar.gz
+      dest: /home/vagrant/swift-3.0-RELEASE-ubuntu14.04.tar.gz
+    when: swift_download.stat.exists == false
+
+  - name: Check if system swift exists
+    stat:
+      path: /vagrant/system/swift
+    register: system_swift
+
+  - name: Extract Swift 3 download
+    unarchive:
+      src: /home/vagrant/swift-3.0-RELEASE-ubuntu14.04.tar.gz
+      dest: /vagrant/system
+      creates: /home/vagrant/swift-3.0-RELEASE-ubuntu14.04
+      remote_src: yes
+    when:
+      - swift_download.stat.exists == true
+      - system_swift.stat.exists == false
+    become: true
+
+  - name: Check if Swift extract exists
+    stat:
+      path: /vagrant/system/swift-3.0-RELEASE-ubuntu14.04
+    register: swift_extract
+
+  - name: Rename Swift 3 Extract
+    command: mv /vagrant/system/swift-3.0-RELEASE-ubuntu14.04 /vagrant/system/swift
+    when:
+      - swift_extract.stat.exists == true
+      - system_swift.stat.exists == false
+
+  - name: Add swift to vagrant users PATH
+    lineinfile:
+      dest: /home/vagrant/.profile
+      line: 'export PATH=/vagrant/system/swift/usr/bin:${PATH}'
+      state: present
+
+  - name: Check that Swift 3 install was successful
+    shell: curl -sL check.vapor.sh | bash
+    args:
+      executable: /bin/bash
+    environment:
+      PATH: "/vagrant/system/swift/usr/bin:{{ ansible_env.PATH }}"
+
+  - name: Install Vapor toolbox
+    shell: curl -sL toolbox.vapor.sh | bash
+    args:
+      executable: /bin/bash
+    environment:
+      PATH: "/vagrant/system/swift/usr/bin:{{ ansible_env.PATH }}"

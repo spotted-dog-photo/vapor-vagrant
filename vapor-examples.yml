@@ -1,0 +1,48 @@
+---
+- hosts: all
+  tasks:
+  - name: Check if vapor examples exists
+    stat:
+      path: /vagrant/www
+    register: vapor_examples
+
+  - name: Checkout source from github
+    git:
+      repo: https://github.com/spotted-dog-photo/vapor-examples.git
+      dest: /vagrant/www
+      ssh_opts: "-o StrictHostKeyChecking=no"
+    when: vapor_examples.stat.exists == false
+    become: true
+
+  - name: Copy over nginx defaults
+    copy:
+      src: /vagrant/dev/default
+      dest: /etc/nginx/sites-available/default
+      remote_src: true
+    become: true
+
+  - name: Copy over nginx config
+    copy:
+      src: /vagrant/dev/nginx.conf
+      dest: /etc/nginx/nginx.conf
+      remote_src: true
+    become: true
+
+  - name: Reload nginx
+    command: nginx -s reload
+    become: true
+
+  - name: Copy over vapor examples config
+    copy:
+      src: /vagrant/dev/www-vapor.conf
+      dest: /etc/supervisor/conf.d/www-vapor.conf
+      remote_src: true
+    become: true
+
+  - name: Build vapor-examples source
+    shell: vapor build
+    args:
+      chdir: /vagrant/www
+      executable: /bin/bash
+    environment:
+      PATH: "/vagrant/system/swift/usr/bin:{{ ansible_env.PATH }}"

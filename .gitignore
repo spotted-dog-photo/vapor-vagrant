@@ -1,0 +1,11 @@
+# Vagrant
+.vagrant
+
+# Swift
+system
+
+# Vapor-Vagrant
+www
+
+# Ansible
+*.retry
