@@ -33,7 +33,7 @@ Coming soon.
 
 ### Cloning and building the box
 ```sh
-git clone https://github.com/paulatwilson/vapor-vagrant <project-directory>
+git clone https://github.com/spotted-dog-photo/vapor-vagrant <project-directory>
 cd <project-directory>
 vagrant up
 ```
